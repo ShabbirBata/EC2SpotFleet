@@ -1,0 +1,133 @@
+---
+Description: "A simple ASG + Launch Configuration Example"
+AWSTemplateFormatVersion: "2010-09-09"
+
+Parameters: 
+ LaunchTemplateName: 
+  Type: String
+  Description: "Name of the Launch Tempalte to be used"
+  Default: ""
+ EcsAmiId: 
+  Type: String
+  Description: "ECS EC2 AMI ID"
+  Default: ""
+ KeyName: 
+  Type: String
+  Description: "Optional - Name of an existing EC2 KeyPair to enable SSH access to the ECS instances"
+  Default: ""
+ SubnetIds: 
+  Type: AWS::EC2::Subnet::Id
+  Description: "Optional - Comma separated list of two (2) existing VPC Subnet Ids where ECS instances will run.  Required if setting VpcId."
+  Default: ""
+ SecurityGroup:
+  Type: String
+  Default: ""
+ RootVolumeSize:
+   Type: Number
+   Description: "Root volume size"
+   Default: ""
+ IamInstanceProfile:
+   Type: String
+   Description: "Profile for EC2 instance"
+   Default: ""
+ ECSCLUSTER:
+   Type: String
+   Description: "ECS Cluster Name"
+   Default : ""
+ AutoScalingGroupName:
+   Type: String
+   Description: "AutoScalingGroup Name"
+   Default : ""
+ AsgMaxSize:
+   Type: "Number"
+   Description: "Specifies the desired capacity for the Auto Scaling group."
+   Default: "1"
+ MinSize:
+   Type: "Number"
+   Description: "The minimum size of the Auto Scaling group."
+   Default: "1"
+ MaxSize:
+   Type: "Number"
+   Description: "The maximum size of the Auto Scaling group."
+   Default: "5"
+ AvailabilityZones:
+  Type: List<AWS::EC2::AvailabilityZone::Name>
+  Description: "An array of Availability Zones for a region, such as us-west-2a, us-west-2b"
+ InstanceType:
+  Type: "String"
+  Description: "ECS EC2 instance type"
+  Default: "r4.2xlarge"
+
+Resources:
+  LaunchTemplate:
+    Type: "AWS::EC2::LaunchTemplate"
+    Properties:
+      LaunchTemplateName: !Ref LaunchTemplateName
+      LaunchTemplateData:
+        ImageId: !Ref EcsAmiId
+        KeyName: !Ref KeyName
+        InstanceType: !Ref InstanceType
+        SecurityGroupIds:
+        - !Ref SecurityGroup
+        IamInstanceProfile:
+          Arn: !Ref IamInstanceProfile
+        TagSpecifications:
+        - ResourceType: instance
+          Tags:
+          - Key: Name
+            Value: dev-cgw-spot-instance
+        UserData:
+          Fn::Base64:
+            !Sub |
+            #!/bin/sh
+            export PATH=/usr/local/bin:$PATH
+            yum -y --security update
+            yum -y install jq
+            easy_install pip
+            pip install awscli
+            aws configure set default.region ${AWS::Region}
+            echo ECS_CLUSTER=${ECSCLUSTER} >> /etc/ecs/ecs.config
+            sudo yum update -y ecs-init
+            sudo start ecs
+            echo 'ECS Agent started'
+            sudo yum -y install nfs-utils
+            sudo yum -y install curl
+        BlockDeviceMappings:
+        - DeviceName: "/dev/xvda"
+          Ebs:
+            VolumeType: gp2
+            DeleteOnTermination: true
+            VolumeSize:
+              Ref: RootVolumeSize
+
+  AutoScalingGroup:
+    Type: "AWS::AutoScaling::AutoScalingGroup"
+    DependsOn: "LaunchTemplate"
+    Properties:
+      AutoScalingGroupName: !Ref AutoScalingGroupName
+      MinSize: !Ref MinSize
+      MaxSize: !Ref MaxSize
+      DesiredCapacity: !Ref AsgMaxSize
+      Tags:
+      - Key: Name
+        Value: dev-cgw-spot-instance
+        PropagateAtLaunch: false
+      LaunchTemplate:
+        LaunchTemplateId:
+          Ref: "LaunchTemplate"
+        Version:
+          Fn::GetAtt:
+            [ "LaunchTemplate", "LatestVersionNumber" ]
+      AvailabilityZones: !Ref AvailabilityZones
+      VPCZoneIdentifier:
+       - "subnet-b4ebdaff"
+
+Outputs:
+  cloudWatchLogsGroupName:
+    Description: Name of the CloudWatch Logs Group
+    Value:
+      Ref: cloudWatchLogsGroup
+  snsTopic:
+    Description: SNS Topic ARN
+    Value:
+      Ref: snsTopic

@@ -8,4 +8,4 @@ Once the resource(s) are created all you have to do is edit the ASG based on you
 - On-Demand Percentage 100% On-Demand and 0% Spot
 - Desired Capacity
 
-Check out complete documentation here: 
+Check out complete documentation here: https://www.linkedin.com/pulse/using-ec2-spot-fleet-existing-ecs-shabbir-bata

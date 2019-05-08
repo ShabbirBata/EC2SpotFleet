@@ -2,6 +2,10 @@
 Description: "A simple ASG + Launch Configuration Example"
 AWSTemplateFormatVersion: "2010-09-09"
 
+Metadata:
+  Authors:
+    Description: Shabbir Bata (shabbir.bata07@gmail.com)
+
 Parameters: 
  LaunchTemplateName: 
   Type: String
@@ -17,7 +21,7 @@ Parameters:
   Default: ""
  SubnetIds: 
   Type: AWS::EC2::Subnet::Id
-  Description: "Optional - Comma separated list of two (2) existing VPC Subnet Ids where ECS instances will run.  Required if setting VpcId."
+  Description: "Existing VPC Subnet Ids where ECS instances will run."
   Default: ""
  SecurityGroup:
   Type: String
@@ -120,14 +124,4 @@ Resources:
             [ "LaunchTemplate", "LatestVersionNumber" ]
       AvailabilityZones: !Ref AvailabilityZones
       VPCZoneIdentifier:
-       - "subnet-b4ebdaff"
-
-Outputs:
-  cloudWatchLogsGroupName:
-    Description: Name of the CloudWatch Logs Group
-    Value:
-      Ref: cloudWatchLogsGroup
-  snsTopic:
-    Description: SNS Topic ARN
-    Value:
-      Ref: snsTopic
+       - "<Your subnet here>"

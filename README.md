@@ -1,6 +1,6 @@
 # EC2SpotFleet
 
-`This template launches ASG and Launch template.`
+`This template launches ASG and Launch template to launch EC2 spot fleet of instaces in your ECS`
 
 Once the resource(s) are created all you have to do is edit the ASG based on your requirement to leverage EC2 SPOT Fleet by updating: 
 
